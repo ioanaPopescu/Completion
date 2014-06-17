@@ -15,7 +15,7 @@ import org.springframework.web.servlet.ModelAndView;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.*;
+import java.io.IOException;
 
 /**
  * Created by Ioana Popescu on 5/5/14.
@@ -35,13 +35,8 @@ public class UploadImageController {
 
     @RequestMapping("/fileUpload")
     public ModelAndView fileUploaded(@ModelAttribute("uploadedFile") UploadedFile uploadedFile, BindingResult result) {
-        InputStream inputStream;
-        OutputStream outputStream;
-
         MultipartFile file = uploadedFile.getFile();
         fileValidator.validate(file, result);
-
-
         String fileName = file.getOriginalFilename();
 
         if (result.hasErrors()) {
@@ -49,19 +44,17 @@ public class UploadImageController {
         }
 
         try {
-
             BufferedImage bufferedImage = ImageIO.read(file.getInputStream());
             CustomImage customImage = new CustomImage(bufferedImage);
             customImage.setName(fileName);
             customImage.setOriginalImageMatrix(ProcessImage.getPixelRGBDataFromBufferedImage(bufferedImage));
-            customImage.setGrayImage((BufferedImage) ProcessImage.getGrayScaleImage(customImage.getOriginalImage()));
 
-            int[][] resultMatrixGray = ProcessImage.getPixelDataFromBufferedImage((BufferedImage) ProcessImage.getGrayScaleImage(bufferedImage));
+            //int[][] resultMatrixGray = ProcessImage.getPixelDataFromBufferedImage((BufferedImage) ProcessImage.getGrayScaleImage(bufferedImage));
 
             objectService.getImageWithoutMainObject(customImage);
-            BufferedImage outputImage = customImage.getFinalImage();
+            /*BufferedImage outputImage = customImage.getFinalImage();
 
-            ProcessImage.writeImageOnDisk(fileName, outputImage);
+            ProcessImage.writeImageOnDisk(fileName, outputImage, "D:/Tests/gray");*/
 
         } catch (IOException e) {
             e.printStackTrace();

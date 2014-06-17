@@ -49,7 +49,8 @@ public class ObjectServiceImpl implements ObjectService {
                 grayImage[row][column] = (grayImage[row][column] < threshold) ? background : object;
             }
         }
-        ProcessImage.writeImageOnDisk("bwimag.jpg", ProcessImage.getBufferedImageFromPixelData(grayImage, width, height, BufferedImage.TYPE_BYTE_GRAY));
+        ProcessImage.writeImageOnDisk("bwimag.jpg", ProcessImage.getBufferedImageFromPixelData(grayImage, width, height, BufferedImage.TYPE_BYTE_GRAY),
+                "D:/Tests/");
         return grayImage;
     }
 
@@ -65,9 +66,9 @@ public class ObjectServiceImpl implements ObjectService {
 
         getDominantObjectValue(width, height);
         eliminateMainObjectFromImage(originalImage, withoutObjectImage);
-        reconstructImage(originalImage);
+        /*reconstructImage(originalImage);
         originalImage.setFinalImage(ProcessImage.getBufferedImageFromPixelData(
-                originalImage.getFinalImageMatrix(), width, height, BufferedImage.TYPE_INT_RGB));
+                originalImage.getFinalImageMatrix(), width, height, BufferedImage.TYPE_INT_RGB));*/
     }
 
     /**
@@ -169,13 +170,17 @@ public class ObjectServiceImpl implements ObjectService {
      */
     private int getThresholdValue(int[][] grayImage, int width, int height) {
         double mean = 0.0;
+        int min = 256;
+        int max = 0;
         for (int row = 0; row < height; row++) {
             for (int column = 0; column < width; column++) {
                 mean += grayImage[row][column];
+                if (min > grayImage[row][column]) min = grayImage[row][column];
+                if (max < grayImage[row][column]) max = grayImage[row][column];
             }
         }
         mean = mean / (width * height);
-        return (int) mean;
+        return (int) (min + max) / 2;
     }
 
     /**
@@ -199,27 +204,26 @@ public class ObjectServiceImpl implements ObjectService {
                 dominantValue = (Integer) entry.getKey();
             }
         }
-        ;
     }
 
     /**
      * This method iterates through the processed image that contains detached
      * objects in order to remove from the original image the determined main
-     * object. After the removal the pixels will become a shade of green. The new image
+     * object. After the removal the pixels will become black. The new image
      * will be saved on a CustomImage object.
      *
      * @param image       the input image
      * @param objectImage the matrix containing object segmentation
      */
-    private void eliminateMainObjectFromImage(CustomImage image, int[][] objectImage) {
+    private void eliminateMainObjectFromImage(CustomImage image, int[][] objectImage) throws IOException {
         int[][][] originalImage = image.getOriginalImageMatrix();
         int width = image.getWidth();
         int height = image.getHeight();
         for (int row = 0; row < height; row++) {
             for (int column = 0; column < width; column++) {
                 if (objectImage[row][column] == dominantValue) {
-                    originalImage[row][column][0] = 127;
-                    originalImage[row][column][1] = 255;
+                    originalImage[row][column][0] = 0;
+                    originalImage[row][column][1] = 0;
                     originalImage[row][column][2] = 0;
                     objectImage[row][column] = BLACK;
                 } else {
@@ -228,6 +232,8 @@ public class ObjectServiceImpl implements ObjectService {
             }
         }
         image.setObjectImageMatrix(objectImage);
+        ProcessImage.writeImageOnDisk("object.jpg", ProcessImage.getBufferedImageFromPixelData(objectImage, width, height, BufferedImage.TYPE_BYTE_GRAY),
+                "D:/Tests/");
         image.setWithoutObjectMatrix(originalImage);
     }
 
@@ -251,14 +257,12 @@ public class ObjectServiceImpl implements ObjectService {
         cannyEdgeDetector.process();
         image.setEdgeObject(ProcessImage.getPixelDataFromBufferedImage(cannyEdgeDetector.getEdgesImage()));
         ProcessImage.writeImageOnDisk(nrTestImage++ + "test.jpg",
-                cannyEdgeDetector.getEdgesImage());
+                cannyEdgeDetector.getEdgesImage(), "D:/Tests/contour");
     }
 
 
     private List<Priority> calculatePriorities(CustomImage image, int windowDimension) {
-        int[][] edge = image.getEdgeObject();
         int[][][] rgb = image.getWithoutObjectMatrix();
-
         List<Priority> priorityList = getEdgeAsList(image);
 
         for (Priority priority : priorityList) {
@@ -267,8 +271,8 @@ public class ObjectServiceImpl implements ObjectService {
             int noPixelsKnown = 0;
             for (int row = referenceRow - 1; row <= referenceRow + 1; row++) {
                 for (int column = referenceColumn - 1; column <= referenceColumn + 1; column++) {
-                    if (rgb[row][column][0] != 127 ||
-                            rgb[row][column][1] != 255 ||
+                    if (rgb[row][column][0] != 0 ||
+                            rgb[row][column][1] != 0 ||
                             rgb[row][column][2] != 0) {
                         noPixelsKnown++;
                     }
@@ -318,20 +322,29 @@ public class ObjectServiceImpl implements ObjectService {
     }
 
     /**
-     * todo margine
+     * This method is calculating the Euclidian distance between
+     * two different 3D image matrices trough the edges. In the calculus,
+     * it will be used only the values from the first and last columns,
+     * respectively, first and last row.
      *
-     * @param knownRegion
-     * @param unknownRegion
-     * @return
+     * @param knownRegion   the 3D matrix of the known region
+     * @param unknownRegion the 3D matrix of the unknown region
+     * @return the distance between the two inputs, as a double
      */
     private double getEuclidianDistanceThroughEdge(int[][][] knownRegion, int[][][] unknownRegion) {
         int sumOfSquares = 0;
         for (int k = 0; k < WINDOW_DIMENSION; k++) {
             for (int color = 0; color < 3; color++) {
                 sumOfSquares += Math.pow(knownRegion[0][k][color] - unknownRegion[0][k][color], 2)
-                        + Math.pow(knownRegion[WINDOW_DIMENSION - 1][k][color] - unknownRegion[WINDOW_DIMENSION - 1][k][color], 2)
-                        + Math.pow(knownRegion[k][0][color] - unknownRegion[k][0][color], 2)
-                        + Math.pow(knownRegion[k][WINDOW_DIMENSION - 1][color] - unknownRegion[k][WINDOW_DIMENSION - 1][color], 2);
+                        + Math.pow(
+                        knownRegion[WINDOW_DIMENSION - 1][k][color] - unknownRegion[WINDOW_DIMENSION - 1][k][color],
+                        2)
+                        + Math.pow(
+                        knownRegion[k][0][color] - unknownRegion[k][0][color],
+                        2)
+                        + Math.pow(
+                        knownRegion[k][WINDOW_DIMENSION - 1][color] - unknownRegion[k][WINDOW_DIMENSION - 1][color],
+                        2);
             }
         }
         return Math.sqrt(sumOfSquares);
@@ -355,14 +368,14 @@ public class ObjectServiceImpl implements ObjectService {
                             for (int k = 0; k < 3; k++) {
                                 temporaryMatrix[i - row + halfDim][j - column + halfDim][k] = matrix[i][j][k];
                             }
-                            if (temporaryMatrix[i - row + halfDim][j - column + halfDim][0] == 127
-                                    && temporaryMatrix[i - row + halfDim][j - column + halfDim][1] == 255
+                            if (temporaryMatrix[i - row + halfDim][j - column + halfDim][0] == 0
+                                    && temporaryMatrix[i - row + halfDim][j - column + halfDim][1] == 0
                                     && temporaryMatrix[i - row + halfDim][j - column + halfDim][2] == 0) {
                                 noOfBad++;
                             }
                         }
                     }
-                    if (noOfBad < 0.5 * Math.sqrt(WINDOW_DIMENSION)) {
+                    if (noOfBad < 0.25 * Math.sqrt(WINDOW_DIMENSION)) {
                         double euclidianDistanceThroughEdge = getEuclidianDistanceThroughEdge(temporaryMatrix, unknownRegion);
                         if (euclidianDistanceThroughEdge <= minimumSimilarity) {
                             minimumSimilarity = euclidianDistanceThroughEdge;
@@ -377,78 +390,77 @@ public class ObjectServiceImpl implements ObjectService {
         return similarity;
     }
 
-    private void replacePatches(int[][][] unknownRegion, PatchSimilarity similarity) {
-
-    }
-
     private void reconstructImage(CustomImage customImage) throws IOException {
-        int[][][] originalImage = customImage.getOriginalImageMatrix();
         //boolean value containing true if all the image is rebuilt
         boolean completeImage = false;
         int halfDimension = WINDOW_DIMENSION / 2;
 
         while (!completeImage) {
+            int[][][] originalImage = customImage.getOriginalImageMatrix();
             extractContourObject(customImage, customImage.getObjectImageMatrix());
             List<Priority> priorities = calculatePriorities(customImage, WINDOW_DIMENSION);
+            Collections.sort(priorities);
             if (priorities.size() == 0) {
                 completeImage = true;
                 break;
             }
-            // while (priorities.size() != 0) {
-            double maxPriority = 0;
-            int centralPointRow = 0;
-            int centralPointColumn = 0;
-            Priority objPriority = new Priority();
-            for (Priority priority : priorities) {
-                if (maxPriority <= priority.getPriority()) {
-                    maxPriority = priority.getPriority();
-                    centralPointRow = priority.getRow();
-                    centralPointColumn = priority.getColumn();
-                    objPriority = priority;
-                }
+            Iterator iterator = priorities.iterator();
+            while (iterator.hasNext()) {
+                Priority priority = (Priority) iterator.next();
+                int centralPointRow = priority.getRow();
+                int centralPointColumn = priority.getColumn();
+                iterator.remove();
+                int[][][] unknownRegion = getWindowForCentralPoint(originalImage, halfDimension, centralPointRow, centralPointColumn);
+                PatchSimilarity similarity = getSimilarityKnownUnknown(customImage, unknownRegion, centralPointRow, centralPointColumn);
+
+                System.out.println("similarity coordinates: " + similarity.getRow() + "    " + similarity.getColumn());
+                int[][] objectMap = customImage.getObjectImageMatrix();
+                substituteWindows(originalImage, halfDimension, centralPointRow, centralPointColumn, similarity, objectMap);
+
+                customImage.setObjectImageMatrix(objectMap);
             }
-            priorities.remove(objPriority);
-            int[][][] unknownRegion = new int[WINDOW_DIMENSION][WINDOW_DIMENSION][3];
-            for (int row = centralPointRow - halfDimension; row <= centralPointRow + halfDimension; row++) {
-                for (int column = centralPointColumn - halfDimension; column <= centralPointColumn + halfDimension; column++) {
-                    for (int color = 0; color < 3; color++) {
-                        if (row - centralPointRow + halfDimension >= 0
-                                && column - centralPointColumn + halfDimension >= 0
-                                && row >= 0 && column >= 0) {
-                            unknownRegion[row - centralPointRow + halfDimension]
-                                    [column - centralPointColumn + halfDimension]
-                                    [color] = originalImage[row][column][color];
-                        }
-                    }
-                }
-            }
-            PatchSimilarity similarity = getSimilarityKnownUnknown(customImage, unknownRegion, centralPointRow, centralPointColumn);
-            System.out.println("similarity coordinates: " + similarity.getRow() + "    " + similarity.getColumn());
-            int[][] objectMap = customImage.getObjectImageMatrix();
-            for (int ik = similarity.getRow() - halfDimension, iu = centralPointRow - halfDimension;
-                 ik <= similarity.getRow() + halfDimension; ik++, iu++) {
-                for (int jk = similarity.getColumn() - halfDimension, ju = centralPointColumn - halfDimension;
-                     jk <= similarity.getColumn() + halfDimension; jk++, ju++) {
-                    for (int k = 0; k < 3; k++) {
+            ProcessImage.writeImageOnDisk("modified.jpg",
+                    ProcessImage.getBufferedImageFromPixelData(
+                            originalImage, customImage.getWidth(), customImage.getHeight(), BufferedImage.TYPE_INT_RGB), "D:/Tests/gray");
+            customImage.setFinalImageMatrix(originalImage);
+            customImage.setOriginalImageMatrix(originalImage);
+        }
+    }
+
+    private void substituteWindows(int[][][] originalImage, int halfDimension, int centralPointRow, int centralPointColumn, PatchSimilarity similarity, int[][] objectMap) {
+        for (int ik = similarity.getRow() - halfDimension, iu = centralPointRow - halfDimension;
+             ik <= similarity.getRow() + halfDimension; ik++, iu++) {
+            for (int jk = similarity.getColumn() - halfDimension, ju = centralPointColumn - halfDimension;
+                 jk <= similarity.getColumn() + halfDimension; jk++, ju++) {
+//                if (originalImage[iu][ju][0] == 0 && originalImage[iu][ju][1] == 0 && originalImage[iu][ju][2] == 0){
+                for (int k = 0; k < 3; k++) {
                         if (iu >= 0 && ik >= 0 && ju >= 0 && jk >= 0) {
-                                /*System.out.println("rows" + iu + "     " + ik);
-                                System.out.println("js" + ju + "     " + jk);*/
                             originalImage[iu][ju][k] = originalImage[ik][jk][k];
                         }
                     }
-                    if (iu >= 0 && ju >= 0) {
-                        objectMap[iu][ju] = BLACK_0;
+//                }
+                if (iu >= 0 && ju >= 0) {
+                    objectMap[iu][ju] = BLACK_0;
+                }
+            }
+        }
+    }
+
+    private int[][][] getWindowForCentralPoint(int[][][] originalImage, int halfDimension, int centralPointRow, int centralPointColumn) {
+        int[][][] unknownRegion = new int[WINDOW_DIMENSION][WINDOW_DIMENSION][3];
+        for (int row = centralPointRow - halfDimension; row <= centralPointRow + halfDimension; row++) {
+            for (int column = centralPointColumn - halfDimension; column <= centralPointColumn + halfDimension; column++) {
+                for (int color = 0; color < 3; color++) {
+                    if (row - centralPointRow + halfDimension >= 0
+                            && column - centralPointColumn + halfDimension >= 0
+                            && row >= 0 && column >= 0) {
+                        unknownRegion[row - centralPointRow + halfDimension]
+                                [column - centralPointColumn + halfDimension]
+                                [color] = originalImage[row][column][color];
                     }
                 }
             }
-            customImage.setObjectImageMatrix(objectMap);
-            ProcessImage.writeImageOnDisk("modified.jpg",
-                    ProcessImage.getBufferedImageFromPixelData(
-                            originalImage, customImage.getWidth(), customImage.getHeight(), BufferedImage.TYPE_INT_RGB));
         }
-        customImage.setFinalImageMatrix(originalImage);
-        customImage.setOriginalImageMatrix(originalImage);
-
-        //}
+        return unknownRegion;
     }
 }
