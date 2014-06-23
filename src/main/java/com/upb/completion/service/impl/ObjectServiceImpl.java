@@ -66,9 +66,9 @@ public class ObjectServiceImpl implements ObjectService {
 
         getDominantObjectValue(width, height);
         eliminateMainObjectFromImage(originalImage, withoutObjectImage);
-        reconstructImage(originalImage);
+        /*reconstructImage(originalImage);
         originalImage.setFinalImage(ProcessImage.getBufferedImageFromPixelData(
-                originalImage.getFinalImageMatrix(), width, height, BufferedImage.TYPE_INT_RGB));
+                originalImage.getFinalImageMatrix(), width, height, BufferedImage.TYPE_INT_RGB));*/
     }
 
     /**
@@ -170,13 +170,17 @@ public class ObjectServiceImpl implements ObjectService {
      */
     private int getThresholdValue(int[][] grayImage, int width, int height) {
         double mean = 0.0;
+        int min = 256;
+        int max = 0;
         for (int row = 0; row < height; row++) {
             for (int column = 0; column < width; column++) {
                 mean += grayImage[row][column];
+                if (min > grayImage[row][column]) min = grayImage[row][column];
+                if (max < grayImage[row][column]) max = grayImage[row][column];
             }
         }
         mean = mean / (width * height);
-        return (int) mean;
+        return (int) (min + max) / 2;
     }
 
     /**
