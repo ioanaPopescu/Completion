@@ -1,13 +1,10 @@
 package com.upb.completion.utils;
 
-import com.upb.completion.model.CustomImage;
-
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.ImageObserver;
 import java.awt.image.PixelGrabber;
-import java.awt.image.Raster;
 import java.io.*;
 
 /**
@@ -112,12 +109,12 @@ public class ProcessImage {
     }
 
 
-    public static void writeImageOnDisk(String fileName, BufferedImage outputImage) throws IOException {
+    public static void writeImageOnDisk(String fileName, BufferedImage outputImage, String newName) throws IOException {
         InputStream inputStream;OutputStream outputStream;ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ImageIO.write(outputImage, "jpg", baos);
         inputStream = new ByteArrayInputStream(baos.toByteArray());
 
-        File newFile = new File("D:/Tests/gray" + fileName);
+        File newFile = new File(newName + fileName);
         if (!newFile.exists()) {
             newFile.createNewFile();
         }

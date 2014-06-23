@@ -1,0 +1,91 @@
+body {
+    margin: 0px;
+    padding: 0px;
+    background: white url("../images/bkg.jpg") left top repeat-x;
+    font-family: Tahoma;
+    font-size: 11px;
+    font-style: normal;
+    font-variant: normal;
+    font-weight: normal;
+    -webkit-font-smoothing: antialiased;
+    text-align: center;
+}
+
+.page-title {
+    font-size: 17px;
+    letter-spacing: 2px;
+    line-height: 17px;
+    text-align: center;
+    text-shadow: rgba(255, 255, 255, 0.901961) 1px 1px 1px;
+    text-transform: uppercase;
+    vertical-align: baseline;
+    width: 1280px;
+    height: 77px;
+    background: url("../images/bkgMain.png") 0 0 no-repeat;
+    margin: 55px auto;
+    padding-top: 15px;
+}
+
+.subtitle {
+    position: relative;
+    margin-top: -40px;
+    margin-bottom: 20px;
+}
+
+input[type="submit"] {
+    text-shadow: 1px 1px 1px rgba(255, 255, 255, 0.9);
+    text-transform: uppercase;
+    color: #47444b;
+    border: 1px solid #a3a099;
+    margin: 0 auto;
+    padding: 10px 30px;
+    text-align: center;
+    background: url("../images/bkgButton.jpg") 0 0 repeat-x;
+    display: block;
+    outline: none;
+    outline: 0;
+    text-decoration: none;
+    cursor: pointer;
+    width: 120px;
+    height: 36px;
+}
+
+.custom-file-input::-webkit-file-upload-button {
+    display: none;
+    width: 120px;
+}
+
+.custom-file-input::before {
+    content: 'ALEGE FISIER';
+    display: inline-block;
+    background: url("../images/bkgButton.jpg") 0 0 repeat-x;
+    outline: none;
+    white-space: nowrap;
+    -webkit-user-select: none;
+    cursor: pointer;
+    text-shadow: 1px 1px 1px rgba(255, 255, 255, 0.9);
+    border: 1px solid #a3a099;
+    line-height: 36px;
+    font-family: Arial;
+    width: 120px;
+    text-align: center;
+    font-size: 11px;
+    color: #47444B;
+    font-size: 1em;
+}
+
+span {
+    margin: 10px 0;
+    display: block;
+}
+
+.footer {
+    position: absolute;
+    bottom: 10px;
+    color: #002246;
+    text-transform: uppercase;
+    font-size: 10px;
+    right: 10px;
+    text-align: right;
+    font-family: Arial;
+}
